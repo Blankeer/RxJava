@@ -30,6 +30,7 @@ import rx.plugins.RxJavaHooks;
  * @param <T> the input value type
  * @param <R> the return value type
  */
+//NOTE-Blanke: 这是 map 操作符的源码
 public final class OnSubscribeMap<T, R> implements OnSubscribe<R> {
 
     final Observable<T> source;
@@ -38,16 +39,19 @@ public final class OnSubscribeMap<T, R> implements OnSubscribe<R> {
 
     public OnSubscribeMap(Observable<T> source, Func1<? super T, ? extends R> transformer) {
         this.source = source;
-        this.transformer = transformer;
+        this.transformer = transformer; //NOTE-Blanke: 转换函数,也就是我们传入的那个匿名类
     }
 
     @Override
     public void call(final Subscriber<? super R> o) {
+        //NOTE-Blanke: 首先 new 一个新的Subscriber,其实是传参 o 的一个包装类,内部将原始数据T 转为 R,再回调 o 的 onNext() 等
         MapSubscriber<T, R> parent = new MapSubscriber<T, R>(o, transformer);
+        //NOTE-Blanke: 这里做的是将新的MapSubscriber,添加到旧的 o 中,
+        // 为了保证调用 o 的unsubscribe()和isUnsubscribed() 能调用到 parent 的对应方法中
         o.add(parent);
-        source.unsafeSubscribe(parent);
+        source.unsafeSubscribe(parent);//NOTE-Blanke:  parent 订阅 source,也就是用MapSubscriber订阅了未 map 之前的 Observable
     }
-
+    //NOTE-Blanke: actual为真实的Subscriber,就是我们使用时,传入的
     static final class MapSubscriber<T, R> extends Subscriber<T> {
 
         final Subscriber<? super R> actual;
@@ -66,7 +70,7 @@ public final class OnSubscribeMap<T, R> implements OnSubscribe<R> {
             R result;
 
             try {
-                result = mapper.call(t);
+                result = mapper.call(t);//NOTE-Blanke: 首先将原始的数据 T 通过 map 转换函数转成 R
             } catch (Throwable ex) {
                 Exceptions.throwIfFatal(ex);
                 unsubscribe();
@@ -74,7 +78,7 @@ public final class OnSubscribeMap<T, R> implements OnSubscribe<R> {
                 return;
             }
 
-            actual.onNext(result);
+            actual.onNext(result);//NOTE-Blanke: 转换完成后回调真实的Subscriber.onNext()
         }
 
         @Override

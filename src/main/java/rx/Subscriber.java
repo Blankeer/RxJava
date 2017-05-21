@@ -30,6 +30,7 @@ import rx.internal.util.SubscriptionList;
  * @param <T>
  *          the type of items the Subscriber expects to observe
  */
+//NOTE-Blanke: 观察者对象 , 一般使用需要实现 onNext(),onCompleted(),onError()方法
 public abstract class Subscriber<T> implements Observer<T>, Subscription {
 
     // represents requested not set yet

@@ -55,6 +55,7 @@ public class Observable<T> {
      * @param f
      *            {@link OnSubscribe} to be executed when {@link #subscribe(Subscriber)} is called
      */
+    //NOTE-Blanke: 构造方法说明都没做,仅仅是把 OnSubscribe 保存了下来
     protected Observable(OnSubscribe<T> f) {
         this.onSubscribe = f;
     }
@@ -94,6 +95,7 @@ public class Observable<T> {
      *         function
      * @see <a href="http://reactivex.io/documentation/operators/create.html">ReactiveX operators documentation: Create</a>
      */
+    //NOTE-Blanke: RxJavaHooks是 hook 相关方法,分析时可暂时不看
     public static <T> Observable<T> create(OnSubscribe<T> f) {
         return new Observable<T>(RxJavaHooks.onCreate(f));
     }
@@ -188,6 +190,18 @@ public class Observable<T> {
      * Invoked when Observable.subscribe is called.
      * @param <T> the output value type
      */
+    //NOTE-Blanke: 这个接口就是我们创建 Observable 时,传入的
+    /*
+         举个例子就是
+         new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                subscriber.onNext("Hello");
+                subscriber.onNext("Hi");
+                subscriber.onCompleted();
+            }
+         }
+    */
     public interface OnSubscribe<T> extends Action1<Subscriber<? super T>> {
         // cover for generics insanity
     }
@@ -7586,6 +7600,7 @@ public class Observable<T> {
      *         function
      * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX operators documentation: Map</a>
      */
+    //NOTE-Blanke: map 是最常用的操作符,将 T 转成 R
     public final <R> Observable<R> map(Func1<? super T, ? extends R> func) {
         return create(new OnSubscribeMap<T, R>(this, func));
     }
@@ -10259,10 +10274,12 @@ public class Observable<T> {
      *             if the {@link Subscriber}'s {@code onError} method itself threw a {@code Throwable}
      * @see <a href="http://reactivex.io/documentation/operators/subscribe.html">ReactiveX operators documentation: Subscribe</a>
      */
+    //NOTE-Blanke:  Observable 和 Subscriber 建立订阅联系,很重要的方法
     public final Subscription subscribe(Subscriber<? super T> subscriber) {
         return Observable.subscribe(subscriber, this);
     }
 
+    //NOTE-Blanke: 上面subscribe是调用的这里,可以看到这是一个包可见的静态方法,传入 观察源 和 观察者,把他们绑在一起建立联系,然后搞事情~
     static <T> Subscription subscribe(Subscriber<? super T> subscriber, Observable<T> observable) {
      // validate and proceed
         if (subscriber == null) {
@@ -10277,6 +10294,7 @@ public class Observable<T> {
         }
 
         // new Subscriber so onStart it
+        //NOTE-Blanke: 在搞事情之前回调,可以做些准备
         subscriber.onStart();
 
         /*
@@ -10284,6 +10302,7 @@ public class Observable<T> {
          * to user code from within an Observer"
          */
         // if not already wrapped
+        //NOTE-Blanke: 这里判断观察者是不是 SafeSubscriber对象,如果不是就包装一下,这里使用到了装饰者模式,可以先不看
         if (!(subscriber instanceof SafeSubscriber)) {
             // assign to `observer` so we return the protected version
             subscriber = new SafeSubscriber<T>(subscriber);
@@ -10293,6 +10312,20 @@ public class Observable<T> {
         // add a significant depth to already huge call stacks.
         try {
             // allow the hook to intercept and/or decorate
+            //NOTE-Blanke: RxJavaHooks 的 hook 相关方法也可以先不看,
+            // 下面的代码可以直接看做是  observable.onSubscribe.call(subscriber);
+            /*
+                这个 onSubscribe  就是 create Observable 时传入的,例:
+                Observable observable = Observable.create(new Observable.OnSubscribe<String>() {
+                    @Override
+                    public void call(Subscriber<? super String> subscriber) {
+                        subscriber.onNext("Hello");
+                        subscriber.onNext("Hi");
+                        subscriber.onCompleted();
+                    }
+                });
+                对,就是传入的这个匿名类,而它的 call 方法就是我们自己实现的
+            */
             RxJavaHooks.onObservableStart(observable, observable.onSubscribe).call(subscriber);
             return RxJavaHooks.onObservableReturn(subscriber);
         } catch (Throwable e) {
