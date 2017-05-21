@@ -16,7 +16,8 @@
 
 package rx.internal.operators;
 
-import rx.Observable.*;
+import rx.Observable.OnSubscribe;
+import rx.Observable.Operator;
 import rx.Subscriber;
 import rx.exceptions.Exceptions;
 import rx.plugins.RxJavaHooks;
@@ -27,6 +28,7 @@ import rx.plugins.RxJavaHooks;
  * @param <T> the source value type
  * @param <R> the result value type
  */
+//NOTE-Blanke: 将OnSubscribe<T> => OnSubscribe<R>
 public final class OnSubscribeLift<T, R> implements OnSubscribe<R> {
 
     final OnSubscribe<T> parent;
@@ -41,6 +43,7 @@ public final class OnSubscribeLift<T, R> implements OnSubscribe<R> {
     @Override
     public void call(Subscriber<? super R> o) {
         try {
+            //NOTE-Blanke: operator.call(o),o 就是使用时传入的,需要用 operator 将它 => OnSubscribe<T>
             Subscriber<? super T> st = RxJavaHooks.onObservableLift(operator).call(o);
             try {
                 // new Subscriber created and being subscribed with so 'onStart' it
