@@ -1,6 +1,6 @@
 RxJava 1.x 源码分析
 ========
-1. Demo 分析
+## Demo 分析
 最简单的 demo
 ```java
 Observable observable = Observable.create(new Observable.OnSubscribe<String>() {
@@ -33,9 +33,7 @@ observable.subscribe(subscriber);
  2. 再创建 Subscriber 观察者,实现它的方法`onNext`,`onCompleted`,`onError`.
  3. 最后通过调用 Observable 的 subscribe 方法,即订阅,观察者和观察源产生联系.
  
-![png](http://plantuml.com/plantuml/png/TP2n5i8W34NtVWKZ7Lft1nUFgmxw0q0pU0JYIQdrywLQWQQwljoybnSr1FI3qq2LCW59EAWSY6OdJluywDxGLOFO2WzZgSYsRUkgH9guuYOIi_XrqZtGGsaxZGs12Y0BAlfaWEFlt2JyNqlfIPl34q-pMnO-9GeWkVH9-rKXJMNcU8b5RBmwA0forNJnOgEibUofdEbGZ4Wt3h6q8pp3seb1UtHt2m4wUQatw0z4I39-zGK0)
-
-2. 基本 demo 的函数调用链
+## 基本 demo 的函数调用链
 去掉部分与性能、兼容性、扩展性有关的代码和函数调用,仅关注核心代码和调用,每一个函数和关键点在对象源码文件里有对应注释
     - `Observable.create` 创建观察源
         - `new Observable.OnSubscribe()`创建OnSubscribe对象
@@ -46,8 +44,12 @@ observable.subscribe(subscriber);
         - `observable.onSubscribe.call(subscriber)` 调用onSubscribe.call() 方法,就是 Observable.create()传入的
             - `Subscriber.onNext(T t)` 这里的 Subscriber 就是我们自定义的subscriber
             - `Subscriber.onCompleted()` 和 onNext 类似
+            
+![demo](http://plantuml.com/plantuml/png/VP2z5i8W38NtFWKZ7Lft1nUFgmu-0T0C7e5uKcfzV6cjWUBFUlFbtjoe8Q0Vd0Qgb0b8ma7bG3GxSVBdGVU6BXh4LdWOSqMsRLjNETB45JUHcCIta-w1xahRQMm8L02PKT4d0IK-vxBmUutJMLl2cQV5BGcl4Xd0BZrhtohmL2QkBB6AZLS7HK5-D5szs2XhruxvUqkwGp4YNKkeo3t2Ouxz2-tHtIm4w6IzGNyWGfBnlKy0)
+
 ok,基本 demo 分析完了,看整个调用流程其实并不复杂,跟踪下来还是很容易的,上述的每个调用部分我都做了一些注释.
-3. 深入使用的源码分析
+
+## 深入使用的源码分析
 RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
  1. 操作符
       -  map
@@ -74,17 +76,19 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
               .map(mapFun)
               .subscribe(action1);
           ```
-          这个例子是把 数字 转变为 "number "+数字
-          将Observable.just(1,2,3,4,5)的将Observable 记做 sourceObservable , map(mapFun)方法调用后,
-          OnSubscribeMap 保存了 sourceObservable 和 mapFun,并 new 一个新的Observable,记做 MapObservable,
-          它的 onSubscribe 就是 OnSubscribeMap,
+          这个例子是把 数字 转变为 "number "+数字.
+          分析前首先 将Observable.just(1,2,3,4,5)返回的Observable 记做 sourceObservable ,
+           map(mapFun)方法调用后,包装了一个新的OnSubscribeMap,即OnSubscribeMap 它保存了 sourceObservable 和 mapFun(我们自定义的转换函数),
+           并生成了一个新的Observable,记做 MapObservable,它的 onSubscribe 就是 OnSubscribeMap,
           当调用subscribe(action1)时,action1 会包装成Subscriber ,记做 targetSubscriber,
-          首先会调 OnSubscribeMap.call(targetSubscriber),然后 new MapSubscriber(sourceObservable,mapFun) 记做 parent,
+          首先会调 OnSubscribeMap.call(targetSubscriber),会生成一个新的 Subscriber,即 MapSubscriber(sourceObservable,mapFun), 记做 parent,
           再调用 targetSubscriber.add(parent) ,这是为了保证调用 targetSubscriber 的unsubscribe()和isUnsubscribed() 能调用到 parent 的对应方法中,
           最后调用 sourceObservable.unsafeSubscribe(parent),这个是 parent 订阅 sourceObservable,当 sourceObservable 调用 onNext()后,
           parent 的onNext()会被调用,它的 onNext()方法首先会调用mapFun()方法将数据转换,将转换后的结果传给targetSubscriber.onNext().
           
-          说的有点复杂,其实可以把 MapSubscriber 看做是 targetSubscriber 的包装,它首先会执行 mapFun 将数据转换,再回调 targetSubscriber
+          ![map](http://plantuml.com/plantuml/png/ZP1DZi8m38NtEKMMhZHqzYow6GqxG1guWDDw15AJL4u279y2CrLTmiyYYcH_py_FcA9toHfYXNNqh2qfItfMwRK9n0SqBUcvjjX1_nR95MhKk61kaqoeUMzeYLsFEZfEYX1t-_0noALWDhNoeZzr6vCr4qO2AIXowuT_0CgoV9cWnhQ5GSBtArUw_uOI_uKMjP7-OV9AYndOD9SRRvuQYrZ91Vob0RbJYvZJbVkpHUG8mYKFhkWKOLiesScWjwJbzO0vFZVtvuq5lhpjMehKGF7ftJUpPw3Nyn_8r1a0)
+          
+          说的有点复杂,其实可以把 MapSubscriber 看做是 targetSubscriber 的包装类,它首先会执行 mapFun 将数据转换,再回调 targetSubscriber
         
       - lift 变换
         变换 Subscriber ,执行变换的代码,变换的过程是`Operator<? extends R, ? super T>`,
@@ -119,7 +123,7 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
         ```
         map 函数的转换可以看做是 数据的正向转换,而 lift 的转换可以看做是 Subscriber 的逆向转换.
         
- 4. 线程控制
+## 线程控制
       - subscribeOn()
         `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.
       - observeOn()

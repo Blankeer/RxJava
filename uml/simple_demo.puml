@@ -11,9 +11,9 @@ me -> Subscriber : new Subscriber(...)
 Subscriber --> me : subscriber
 me -> Observable : subscribe(subscriber)
 Observable -> Subscriber : onStart()
-Observable -> OnSubscribe : call()
+Observable -> OnSubscribe : call(subscriber)
 OnSubscribe -> OnSubscribe : do work
 OnSubscribe -> Subscriber : onNext()
-OnSubscribe -> Subscriber : onCompleted(T)/onError(e)
+OnSubscribe -> Subscriber : onCompleted()/onError(e)
 
 @enduml
