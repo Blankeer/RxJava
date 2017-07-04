@@ -1,0 +1,19 @@
+
+@startuml
+autonumber
+actor me
+me -> OnSubscribe : new OnSubscribe(...)
+OnSubscribe --> me : onSubscribe
+me -> Observable : create(onSubscribe)
+Observable -> Observable : new Observable(onSubscribe)
+Observable --> me : observable
+me -> Subscriber : new Subscriber(...)
+Subscriber --> me : subscriber
+me -> Observable : subscribe(subscriber)
+Observable -> Subscriber : onStart()
+Observable -> OnSubscribe : call()
+OnSubscribe -> OnSubscribe : do work
+OnSubscribe -> Subscriber : onNext()
+OnSubscribe -> Subscriber : onCompleted(T)/onError(e)
+
+@enduml

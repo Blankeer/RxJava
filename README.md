@@ -32,8 +32,10 @@ observable.subscribe(subscriber);
  需要实现`void call(Subscriber subscriber)`方法.
  2. 再创建 Subscriber 观察者,实现它的方法`onNext`,`onCompleted`,`onError`.
  3. 最后通过调用 Observable 的 subscribe 方法,即订阅,观察者和观察源产生联系.
+ 
+![png](http://plantuml.com/plantuml/png/TP2n5i8W34NtVWKZ7Lft1nUFgmxw0q0pU0JYIQdrywLQWQQwljoybnSr1FI3qq2LCW59EAWSY6OdJluywDxGLOFO2WzZgSYsRUkgH9guuYOIi_XrqZtGGsaxZGs12Y0BAlfaWEFlt2JyNqlfIPl34q-pMnO-9GeWkVH9-rKXJMNcU8b5RBmwA0forNJnOgEibUofdEbGZ4Wt3h6q8pp3seb1UtHt2m4wUQatw0z4I39-zGK0)
 
-3. 基本 demo 的函数调用链
+2. 基本 demo 的函数调用链
 去掉部分与性能、兼容性、扩展性有关的代码和函数调用,仅关注核心代码和调用,每一个函数和关键点在对象源码文件里有对应注释
     - `Observable.create` 创建观察源
         - `new Observable.OnSubscribe()`创建OnSubscribe对象
@@ -45,7 +47,7 @@ observable.subscribe(subscriber);
             - `Subscriber.onNext(T t)` 这里的 Subscriber 就是我们自定义的subscriber
             - `Subscriber.onCompleted()` 和 onNext 类似
 ok,基本 demo 分析完了,看整个调用流程其实并不复杂,跟踪下来还是很容易的,上述的每个调用部分我都做了一些注释.
-4. 深入使用的源码分析
+3. 深入使用的源码分析
 RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
  1. 操作符
       -  map
@@ -117,6 +119,8 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
         ```
         map 函数的转换可以看做是 数据的正向转换,而 lift 的转换可以看做是 Subscriber 的逆向转换.
         
- 2. 线程控制
-    
-    
+ 4. 线程控制
+      - subscribeOn()
+        `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.
+      - observeOn()
+        使用了 lift 操作符, operator 是 `OperatorObserveOn`.

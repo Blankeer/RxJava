@@ -27,6 +27,7 @@ import rx.functions.Action0;
  *
  * @param <T> the value type of the actual source
  */
+//NOTE-Blanke: subscribeOn 线程
 public final class OperatorSubscribeOn<T> implements OnSubscribe<T> {
 
     final Scheduler scheduler;

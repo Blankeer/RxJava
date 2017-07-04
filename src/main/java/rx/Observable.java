@@ -55,7 +55,7 @@ public class Observable<T> {
      * @param f
      *            {@link OnSubscribe} to be executed when {@link #subscribe(Subscriber)} is called
      */
-    //NOTE-Blanke: 构造方法说明都没做,仅仅是把 OnSubscribe 保存了下来
+    //NOTE-Blanke: 构造方法什么都没做,仅仅是把 OnSubscribe 保存了下来
     protected Observable(OnSubscribe<T> f) {
         this.onSubscribe = f;
     }
