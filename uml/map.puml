@@ -2,21 +2,23 @@
 @startuml
 autonumber
 actor me
-me -> Observable : map(mapFun)
-Observable -> OnSubscribeMap : new OnSubscribeMap(this,mapFun)
-OnSubscribeMap --> Observable : onSubscribeMap
-Observable -> Observable : create(onSubscribeMap)
-me -> Observable : subscribe(...)
-Observable -> OnSubscribeMap : call(subscriber)
-OnSubscribeMap -> MapSubscriber : new MapSubscriber(subscriber,mapFun)
-OnSubscribeMap -> Subscriber : add(mapSubscriber)
-OnSubscribeMap -> Observable : unsafeSubscribe(mapSubscriber)
-Observable -> MapSubscriber : onStart()
-OnSubscribe -> MapSubscriber : onNext(T)
-MapSubscriber -> MapSubscriber : mapFun.call(T)
-MapSubscriber -> Subscriber : onNext(R)
-OnSubscribe -> MapSubscriber : onCompleted()/onError(e)
-MapSubscriber -> Subscriber : onCompleted()/onError(e)
+me -> sourceObservable : map(mapFun)
+sourceObservable -> onSubscribeMap : new OnSubscribeMap(this,mapFun)
+sourceObservable -> mapObservable : create(onSubscribeMap)
+me -> mapObservable : subscribe(targetSubscriber)
+mapObservable -> targetSubscriber : onStart()
+mapObservable -> onSubscribeMap : call(targetSubscriber)
+onSubscribeMap -> mapSubscriber : new MapSubscriber(targetSubscriber,mapFun)
+onSubscribeMap -> targetSubscriber : add(mapSubscriber)
+onSubscribeMap -> sourceObservable : unsafeSubscribe(mapSubscriber)
+sourceObservable -> mapSubscriber : onStart()
+sourceObservable -> sourceOnSubscribe : call(mapSubscriber)
+sourceOnSubscribe -> sourceOnSubscribe : do work
+sourceOnSubscribe -> mapSubscriber : onNext(T)
+mapSubscriber -> mapFun : call(T)
+mapSubscriber -> targetSubscriber : onNext(R)
+sourceOnSubscribe -> mapSubscriber : onCompleted()/onError(e)
+mapSubscriber -> targetSubscriber : onCompleted()/onError(e)
 
 
 @enduml

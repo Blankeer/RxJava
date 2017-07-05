@@ -56,43 +56,48 @@ demo的输出结果就是 Hello Hi Completed!
 ## 深入使用的源码分析
 RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
 ### 操作符
-      -  map
-          - `Observable.map()`
-            - `create(new OnSubscribeMap<T, R>())` map 的具体逻辑,新生产了一个OnSubscribe类代替了原先的
-                - `OnSubscribeMap.call()`会调用新的 call()
-                    - `new MapSubscriber<T, R>(o, transformer)` MapSubscriber会订阅原来的Observable,也就是会调原先OnSubscribe的 call()
-                    - `MapSubscriber.onNext()`首先会调 map转换函数,再调真实的Subscriber.onNext(),也就是我们自定义传入的匿名类
-          举个例子说明
-          ```java
-              Func1 mapFun=new Func1<Integer, String>() {
-                               @Override
-                               public String call(Integer number) { // 参数类型 int
-                                   return "number " + number; // 返回类型 String
-                               }
-                           };
-              Action1 action1=new Action1<String>() {
-                            @Override
-                            public void call(String str) { // 参数类型 String
-                                Log.i(str);
-                            }
-                        };
-              Observable.just(1,2,3,4,5)
-              .map(mapFun)
-              .subscribe(action1);
-          ```
-          这个例子是把 数字 转变为 "number "+数字.
-          分析前首先 将Observable.just(1,2,3,4,5)返回的Observable 记做 sourceObservable ,
-           map(mapFun)方法调用后,包装了一个新的OnSubscribeMap,即OnSubscribeMap 它保存了 sourceObservable 和 mapFun(我们自定义的转换函数),
-           并生成了一个新的Observable,记做 MapObservable,它的 onSubscribe 就是 OnSubscribeMap,
-          当调用subscribe(action1)时,action1 会包装成Subscriber ,记做 targetSubscriber,
-          首先会调 OnSubscribeMap.call(targetSubscriber),会生成一个新的 Subscriber,即 MapSubscriber(sourceObservable,mapFun), 记做 parent,
-          再调用 targetSubscriber.add(parent) ,这是为了保证调用 targetSubscriber 的unsubscribe()和isUnsubscribed() 能调用到 parent 的对应方法中,
-          最后调用 sourceObservable.unsafeSubscribe(parent),这个是 parent 订阅 sourceObservable,当 sourceObservable 调用 onNext()后,
-          parent 的onNext()会被调用,它的 onNext()方法首先会调用mapFun()方法将数据转换,将转换后的结果传给targetSubscriber.onNext().
-          
-          ![map](http://plantuml.com/plantuml/png/ZP1DZi8m38NtEKMMhZHqzYow6GqxG1guWDDw15AJL4u279y2CrLTmiyYYcH_py_FcA9toHfYXNNqh2qfItfMwRK9n0SqBUcvjjX1_nR95MhKk61kaqoeUMzeYLsFEZfEYX1t-_0noALWDhNoeZzr6vCr4qO2AIXowuT_0CgoV9cWnhQ5GSBtArUw_uOI_uKMjP7-OV9AYndOD9SRRvuQYrZ91Vob0RbJYvZJbVkpHUG8mYKFhkWKOLiesScWjwJbzO0vFZVtvuq5lhpjMehKGF7ftJUpPw3Nyn_8r1a0)
-          
-          说的有点复杂,其实可以把 MapSubscriber 看做是 targetSubscriber 的包装类,它首先会执行 mapFun 将数据转换,再回调 targetSubscriber
+  -  map
+    例子:
+    ```java
+      Func1 mapFun=new Func1<Integer, String>() {
+                       @Override
+                       public String call(Integer number) { // 参数类型 int
+                           return "number " + number; // 返回类型 String
+                       }
+                   };
+      Action1 action1=new Action1<String>() {
+                    @Override
+                    public void call(String str) { // 参数类型 String
+                        Log.i(str);
+                    }
+                };
+      Observable.just(1,2,3,4,5)
+      .map(mapFun)
+      .subscribe(action1);
+    ```
+  
+    ![map](http://plantuml.com/plantuml/png/ZP1DZi8m38NtEKMMhZHqzYow6GqxG1guWDDw15AJL4u279y2CrLTmiyYYcH_py_FcA9toHfYXNNqh2qfItfMwRK9n0SqBUcvjjX1_nR95MhKk61kaqoeUMzeYLsFEZfEYX1t-_0noALWDhNoeZzr6vCr4qO2AIXowuT_0CgoV9cWnhQ5GSBtArUw_uOI_uKMjP7-OV9AYndOD9SRRvuQYrZ91Vob0RbJYvZJbVkpHUG8mYKFhkWKOLiesScWjwJbzO0vFZVtvuq5lhpjMehKGF7ftJUpPw3Nyn_8r1a0)
+                
+    1. 调用 map(mapFun)
+    2. map 方法内部实例化 OnSubscribeMap ,传入 this (Observable) 和 mapFun.
+    3. 调用 Observable.create 方法,生成新的 MapObservable
+    4. 我们调用 subscribe 时,实际上调用的是 MapObservable.subscribe().
+    5. 回调 onStart()
+    6. 调用 onSubscribeMap 的 call()
+    7. 生成一个新的 mapSubscriber ,之后会订阅原来的 Observable.
+    8. 关联两个 subscriber 的 unsubscribe() 
+    9. 用新的 mapSubscriber 订阅原来的 Observable.
+    10. 原来的 Observable 回调 mapSubscriber的 onStart()
+    11. 调用原来的 OnSubscribe.call()
+    12. OnSubscribe 内部的执行逻辑
+    13. 调用 mapSubscriber 的 onNext(T)
+    14. mapSubscriber 会调用 mapFun.call(T) 返回 R
+    15. mapSubscriber 调用真正的 targetSubscriber.onNext(R),R 是转换后的数据
+    
+    看流程有点复杂,其实也很简单,就是 map 在观察源和观察者之前做了一层转换,当发生订阅时,观察者订阅的不是真正的观察源,
+    而是 map 内部的'转换观察源','转换观察源'内部会再去订阅真正的观察源,然后将观察源返回的数据通过转换函数`mapFun`转换,
+    再返回给我们定义的观察者.
+    
         
       - lift 变换
         变换 Subscriber ,执行变换的代码,变换的过程是`Operator<? extends R, ? super T>`,
