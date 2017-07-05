@@ -3,18 +3,19 @@ RxJava 1.x 源码分析
 ## Demo 分析
 最简单的 demo
 ```java
-Observable observable = Observable.create(new Observable.OnSubscribe<String>() {
+Observable.OnSubscribe sourceOnSubscribe = new Observable.OnSubscribe<String>() {
     @Override
     public void call(Subscriber<? super String> subscriber) {
         subscriber.onNext("Hello");
         subscriber.onNext("Hi");
         subscriber.onCompleted();
     }
-});
-Subscriber<String> subscriber = new Subscriber<String>() {
+};
+Observable sourceObservable = Observable.create(sourceOnSubscribe);
+Subscriber<String> targetSubscriber = new Subscriber<String>() {
     @Override
     public void onNext(String s) {
-        Log.d(tag, "Item: " + s);
+        Log.d(tag, s);
     }
     @Override
     public void onCompleted() {
@@ -25,33 +26,36 @@ Subscriber<String> subscriber = new Subscriber<String>() {
         Log.d(tag, "Error!");
     }
 };
-observable.subscribe(subscriber);
+sourceObservable.subscribe(targetSubscriber);
 ```
-使用步骤:
- 1. 首先创建 Observable 观察源,通过 Observable.create 静态方法,传入 Observable.OnSubscribe 对象,
- 需要实现`void call(Subscriber subscriber)`方法.
- 2. 再创建 Subscriber 观察者,实现它的方法`onNext`,`onCompleted`,`onError`.
- 3. 最后通过调用 Observable 的 subscribe 方法,即订阅,观察者和观察源产生联系.
+没有进行简写,每个中间变量都赋予了名字,方便后面说明.
+
+demo的输出结果就是 Hello Hi Completed!
  
 ## 基本 demo 的函数调用链
-去掉部分与性能、兼容性、扩展性有关的代码和函数调用,仅关注核心代码和调用,每一个函数和关键点在对象源码文件里有对应注释
-    - `Observable.create` 创建观察源
-        - `new Observable.OnSubscribe()`创建OnSubscribe对象
-        - `new Observable<T>(OnSubscribe<T> f)`把创建好的OnSubscribe对象丢到构造方法里, new了一个`Observable`
-    - `new Subscriber<T>()` 创建观察者对象
-    - `observable.subscribe(subscriber)` 将观察源和观察者建立联系,然后搞事情
-        - `subscriber.onStart()`回调观察者的`onStart()`方法,即在搞事情之前回调,可以做些准备
-        - `observable.onSubscribe.call(subscriber)` 调用onSubscribe.call() 方法,就是 Observable.create()传入的
-            - `Subscriber.onNext(T t)` 这里的 Subscriber 就是我们自定义的subscriber
-            - `Subscriber.onCompleted()` 和 onNext 类似
-            
-![demo](http://plantuml.com/plantuml/png/VP2z5i8W38NtFWKZ7Lft1nUFgmu-0T0C7e5uKcfzV6cjWUBFUlFbtjoe8Q0Vd0Qgb0b8ma7bG3GxSVBdGVU6BXh4LdWOSqMsRLjNETB45JUHcCIta-w1xahRQMm8L02PKT4d0IK-vxBmUutJMLl2cQV5BGcl4Xd0BZrhtohmL2QkBB6AZLS7HK5-D5szs2XhruxvUqkwGp4YNKkeo3t2Ouxz2-tHtIm4w6IzGNyWGfBnlKy0)
+分析上述最简单的 demo, 分析中不看 部分与性能、兼容性、扩展性有关的代码和函数调用,仅关注核心代码和调用,
+在相关源码里,关键部分有相关注释说明.
 
-ok,基本 demo 分析完了,看整个调用流程其实并不复杂,跟踪下来还是很容易的,上述的每个调用部分我都做了一些注释.
+先上图.
+
+![demo](http://plantuml.com/plantuml/png/bP0n3i8m34Ntd29ZCb1s1XR4IeToWIIr42A9aUjGZa-1gereEh1-_UTdsoJ6c8854iOnaWmW0iZDNdQOo44TcsGxHrSBSYSZz39BL5LLUgpNjWDw6ElVFKTW6DHYX1PPRNRaw4Sn1QKHNnyRkW1FCOte7EJB5JpTTCJl92qMzR8FOpEahCf0wN_EUB_kowehV8koHxgLWUA69tYoEki_Y0E6kmU6LkajnYCHaXg-_W80)
+
+1. 实例化 Observable.OnSubscribe , 记为 sourceOnSubscribe.
+2. 调用 Observable.create 静态方法
+3. create()内部会实例化 Observable 对象,需要传入sourceOnSubscribe,将其返回值记为 sourceObservable.
+4. 实例化 Subscriber , 记为 targetSubscriber.
+5. 调用 sourceObservable.subscribe(targetSubscriber) 方法,这是将观察者和观察源建立联系的地方,订阅.
+6. sourceObservable 会首先调用 targetSubscriber.onStart() 方法.
+7. sourceObservable 调用 sourceOnSubscribe 的 call(targetSubscriber)方法, 就是上面我们自定义的地方,执行到我们写的代码附近了.
+8. 执行相关逻辑,上面 demo 中什么都没做,这里需要我们自己实现具体逻辑.
+9. 调用 `targetSubscriber.onNext(T)` 方法,这里也是上面 demo 里自己实现的地方.
+10. `targetSubscriber.onCompleted()` or `targetSubscriber.onError(e)`,整个流程跑完了.
+
+整个调用流程其实并不复杂,跟踪下来还是很容易的,RxJava 在内部也没做太多的事.
 
 ## 深入使用的源码分析
 RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
- 1. 操作符
+### 操作符
       -  map
           - `Observable.map()`
             - `create(new OnSubscribeMap<T, R>())` map 的具体逻辑,新生产了一个OnSubscribe类代替了原先的
@@ -123,7 +127,7 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
         ```
         map 函数的转换可以看做是 数据的正向转换,而 lift 的转换可以看做是 Subscriber 的逆向转换.
         
-## 线程控制
+### 线程控制
       - subscribeOn()
         `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.
       - observeOn()

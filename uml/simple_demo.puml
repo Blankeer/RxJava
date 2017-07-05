@@ -2,18 +2,15 @@
 @startuml
 autonumber
 actor me
-me -> OnSubscribe : new OnSubscribe(...)
-OnSubscribe --> me : onSubscribe
-me -> Observable : create(onSubscribe)
-Observable -> Observable : new Observable(onSubscribe)
-Observable --> me : observable
-me -> Subscriber : new Subscriber(...)
-Subscriber --> me : subscriber
-me -> Observable : subscribe(subscriber)
-Observable -> Subscriber : onStart()
-Observable -> OnSubscribe : call(subscriber)
-OnSubscribe -> OnSubscribe : do work
-OnSubscribe -> Subscriber : onNext()
-OnSubscribe -> Subscriber : onCompleted()/onError(e)
+me -> sourceOnSubscribe : new OnSubscribe(...)
+me -> Observable : create(sourceOnSubscribe)
+Observable -> sourceObservable : new Observable(sourceOnSubscribe)
+me -> targetSubscriber : new Subscriber(...)
+me -> sourceObservable : subscribe(targetSubscriber)
+sourceObservable -> targetSubscriber : onStart()
+sourceObservable -> sourceOnSubscribe : call(targetSubscriber)
+sourceOnSubscribe -> sourceOnSubscribe : do work
+sourceOnSubscribe -> targetSubscriber : onNext(T)
+sourceOnSubscribe -> targetSubscriber : onCompleted()/onError(e)
 
 @enduml
