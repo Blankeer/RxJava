@@ -76,8 +76,8 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
       .subscribe(action1);
     ```
   
-    ![map](http://plantuml.com/plantuml/png/ZP1DZi8m38NtEKMMhZHqzYow6GqxG1guWDDw15AJL4u279y2CrLTmiyYYcH_py_FcA9toHfYXNNqh2qfItfMwRK9n0SqBUcvjjX1_nR95MhKk61kaqoeUMzeYLsFEZfEYX1t-_0noALWDhNoeZzr6vCr4qO2AIXowuT_0CgoV9cWnhQ5GSBtArUw_uOI_uKMjP7-OV9AYndOD9SRRvuQYrZ91Vob0RbJYvZJbVkpHUG8mYKFhkWKOLiesScWjwJbzO0vFZVtvuq5lhpjMehKGF7ftJUpPw3Nyn_8r1a0)
-                
+    ![map](http://plantuml.com/plantuml/png/ZLAzJiCm4Dxp51uT2SJEq0N1LYe1Bt1s3gY8xUXijpm-Hzk4EBwW3bdklZz_5yWf-EmCKWCs1L8E6uVgTgDYo6HnPoBI0KoFwbuv63H_JzctJRLcIl2lsKHBUuDR69ZWyQXsnL2dptsy-K-4TuMf9OI4kjHkBo6Nu3XYT0Bwm3HnY1a5bibB2FFPXQT92-ZgSHRwNh1PuCuX2vFVLhRpMQKo5LIB2Q6XwtJX8V64SsOVuHqdu59ZvJWhVKdeo-mlozYQx3J3hP2xe8w1lcH2dUqPlvD-EzrojZb3kTunZOGG_usJtajxhVr3S4EF2JlTtWN_I1H8uxLUA-Jc1m00)
+         
     1. 调用 map(mapFun)
     2. map 方法内部实例化 OnSubscribeMap ,传入 this (Observable) 和 mapFun.
     3. 调用 Observable.create 方法,生成新的 MapObservable
