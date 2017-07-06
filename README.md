@@ -58,45 +58,45 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
 ### 操作符
   -  map
     
-    ```java
-      Func1 mapFun=new Func1<Integer, String>() {
-                       @Override
-                       public String call(Integer number) { // 参数类型 int
-                           return "number " + number; // 返回类型 String
-                       }
-                   };
-      Action1 action1=new Action1<String>() {
-                    @Override
-                    public void call(String str) { // 参数类型 String
-                        Log.i(str);
-                    }
-                };
-      Observable.just(1,2,3,4,5)
-      .map(mapFun)
-      .subscribe(action1);
-    ```
+  ```java
+Func1 mapFun=new Func1<Integer, String>() {
+               @Override
+               public String call(Integer number) { // 参数类型 int
+                   return "number " + number; // 返回类型 String
+               }
+           };
+Action1 action1=new Action1<String>() {
+            @Override
+            public void call(String str) { // 参数类型 String
+                Log.i(str);
+            }
+        };
+Observable.just(1,2,3,4,5)
+.map(mapFun)
+.subscribe(action1);
+  ```
   
-    ![map](http://plantuml.com/plantuml/png/ZLAzJiCm4Dxp51uT2SJEq0N1LYe1Bt1s3gY8xUXijpm-Hzk4EBwW3bdklZz_5yWf-EmCKWCs1L8E6uVgTgDYo6HnPoBI0KoFwbuv63H_JzctJRLcIl2lsKHBUuDR69ZWyQXsnL2dptsy-K-4TuMf9OI4kjHkBo6Nu3XYT0Bwm3HnY1a5bibB2FFPXQT92-ZgSHRwNh1PuCuX2vFVLhRpMQKo5LIB2Q6XwtJX8V64SsOVuHqdu59ZvJWhVKdeo-mlozYQx3J3hP2xe8w1lcH2dUqPlvD-EzrojZb3kTunZOGG_usJtajxhVr3S4EF2JlTtWN_I1H8uxLUA-Jc1m00)
+  ![map](http://plantuml.com/plantuml/png/ZLAzJiCm4Dxp51uT2SJEq0N1LYe1Bt1s3gY8xUXijpm-Hzk4EBwW3bdklZz_5yWf-EmCKWCs1L8E6uVgTgDYo6HnPoBI0KoFwbuv63H_JzctJRLcIl2lsKHBUuDR69ZWyQXsnL2dptsy-K-4TuMf9OI4kjHkBo6Nu3XYT0Bwm3HnY1a5bibB2FFPXQT92-ZgSHRwNh1PuCuX2vFVLhRpMQKo5LIB2Q6XwtJX8V64SsOVuHqdu59ZvJWhVKdeo-mlozYQx3J3hP2xe8w1lcH2dUqPlvD-EzrojZb3kTunZOGG_usJtajxhVr3S4EF2JlTtWN_I1H8uxLUA-Jc1m00)
+  
+1. 调用 map(mapFun)
+2. map 方法内部实例化 OnSubscribeMap ,传入 this (Observable) 和 mapFun.
+3. 调用 Observable.create 方法,生成新的 MapObservable
+4. 我们调用 subscribe 时,实际上调用的是 MapObservable.subscribe().
+5. 回调 onStart()
+6. 调用 onSubscribeMap 的 call()
+7. 生成一个新的 mapSubscriber ,之后会订阅原来的 Observable.
+8. 关联两个 subscriber 的 unsubscribe() 
+9. 用新的 mapSubscriber 订阅原来的 Observable.
+10. 原来的 Observable 回调 mapSubscriber的 onStart()
+11. 调用原来的 OnSubscribe.call()
+12. OnSubscribe 内部的执行逻辑
+13. 调用 mapSubscriber 的 onNext(T)
+14. mapSubscriber 会调用 mapFun.call(T) 返回 R
+15. mapSubscriber 调用真正的 targetSubscriber.onNext(R),R 是转换后的数据
     
-    1. 调用 map(mapFun)
-    2. map 方法内部实例化 OnSubscribeMap ,传入 this (Observable) 和 mapFun.
-    3. 调用 Observable.create 方法,生成新的 MapObservable
-    4. 我们调用 subscribe 时,实际上调用的是 MapObservable.subscribe().
-    5. 回调 onStart()
-    6. 调用 onSubscribeMap 的 call()
-    7. 生成一个新的 mapSubscriber ,之后会订阅原来的 Observable.
-    8. 关联两个 subscriber 的 unsubscribe() 
-    9. 用新的 mapSubscriber 订阅原来的 Observable.
-    10. 原来的 Observable 回调 mapSubscriber的 onStart()
-    11. 调用原来的 OnSubscribe.call()
-    12. OnSubscribe 内部的执行逻辑
-    13. 调用 mapSubscriber 的 onNext(T)
-    14. mapSubscriber 会调用 mapFun.call(T) 返回 R
-    15. mapSubscriber 调用真正的 targetSubscriber.onNext(R),R 是转换后的数据
-    
-    看流程有点复杂,其实也很简单,就是 map 在观察源和观察者之前做了一层转换,当发生订阅时,观察者订阅的不是真正的观察源,
-    而是 map 内部的'转换观察源','转换观察源'内部会再去订阅真正的观察源,然后将观察源返回的数据通过转换函数`mapFun`转换,
-    再返回给我们定义的观察者.
+看流程有点复杂,其实也很简单,就是 map 在观察源和观察者之前做了一层转换,当发生订阅时,观察者订阅的不是真正的观察源,
+而是 map 内部的'转换观察源','转换观察源'内部会再去订阅真正的观察源,然后将观察源返回的数据通过转换函数`mapFun`转换,
+再返回给我们定义的观察者.
     
         
   - lift 变换
