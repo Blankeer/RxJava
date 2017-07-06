@@ -57,7 +57,7 @@ demo的输出结果就是 Hello Hi Completed!
 RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
 ### 操作符
   -  map
-    例子:
+    
     ```java
       Func1 mapFun=new Func1<Integer, String>() {
                        @Override
@@ -77,7 +77,7 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
     ```
   
     ![map](http://plantuml.com/plantuml/png/ZLAzJiCm4Dxp51uT2SJEq0N1LYe1Bt1s3gY8xUXijpm-Hzk4EBwW3bdklZz_5yWf-EmCKWCs1L8E6uVgTgDYo6HnPoBI0KoFwbuv63H_JzctJRLcIl2lsKHBUuDR69ZWyQXsnL2dptsy-K-4TuMf9OI4kjHkBo6Nu3XYT0Bwm3HnY1a5bibB2FFPXQT92-ZgSHRwNh1PuCuX2vFVLhRpMQKo5LIB2Q6XwtJX8V64SsOVuHqdu59ZvJWhVKdeo-mlozYQx3J3hP2xe8w1lcH2dUqPlvD-EzrojZb3kTunZOGG_usJtajxhVr3S4EF2JlTtWN_I1H8uxLUA-Jc1m00)
-         
+    
     1. 调用 map(mapFun)
     2. map 方法内部实例化 OnSubscribeMap ,传入 this (Observable) 和 mapFun.
     3. 调用 Observable.create 方法,生成新的 MapObservable
@@ -99,39 +99,52 @@ RxJava 最强大的就是操作符 和 线程操作,接下来看看这部分.
     再返回给我们定义的观察者.
     
         
-      - lift 变换
-        变换 Subscriber ,执行变换的代码,变换的过程是`Operator<? extends R, ? super T>`,
-        通过 `OnSubscribeLift(OnSubscribe<T> parent, Operator operator)`的 call() 方法,
-        首先将 subscriber `operator.call(o)` 转换一下,再执行`parent.call(st);`调用原来的OnSubscribe的逻辑,达到了变换的效果.
-        和上面的 map 操作符对比,其实流程大致类似,区别在于, map 是新建 Subscriber 订阅上层,从上层获取数据,
-        然后调用 map 转换数据,最后再通过 onNext 等方法返回给真正的 Subscriber,可以看做是一个从上至下的转换;
-        而 lift 的原理是:先通过 Operator 将下层真正的 Subscriber 转换成上层所需要的 Subscriber,然后再将转换后的订阅上层 OnSubscribe,
-        可以看做是一个从下至上的转换.
-        举个例子,上述的那个例子,将 int 转变成 String :
-        ```java
-        //map,可以看到,它的转变是从上至下的,上层数据是 int,下层数据是 String, map函数需要实现 int => String 的转换过程
-        new Func1<Integer, String>() {
-           @Override
-           public String call(Integer number) { // 参数类型 int
-               return "number " + number; // 返回类型 String
-           }
-        };
-        //lift,可以看到 Operator 是将 String => int 的,和 map 方向相反
-        observable.lift(new Observable.Operator<String, Integer>() {
-            @Override//这个参数 subscriber,就是最终的,也就是我们使用时传入的
-            public Subscriber<? super Integer> call(final Subscriber<? super String> subscriber) {
-                return new Subscriber<Integer>() {
-                    @Override
-                    public void onNext(Integer integer) {
-                        subscriber.onNext("number " + integer);
-                    }
-                    //省略 onCompleted 和 onError函数
-                };
-            }
-        });
-        ```
-        map 函数的转换可以看做是 数据的正向转换,而 lift 的转换可以看做是 Subscriber 的逆向转换.
-        
+  - lift 变换
+  
+    ```java
+    new Func1<Integer, String>() {
+                @Override
+                public String call(Integer number) { // 参数类型 int
+                    return "number " + number; // 返回类型 String
+                }
+            };
+            Observable<Integer> observable = Observable.just(1, 2, 3, 4, 5);
+            observable.lift(new Observable.Operator<String, Integer>() {
+                @Override//这个参数 subscriber,就是最终的,也就是我们使用时传入的
+                public Subscriber<? super Integer> call(final Subscriber<? super String> subscriber) {
+                    return new Subscriber<Integer>() {
+                        @Override
+                        public void onNext(Integer integer) {
+                            subscriber.onNext("number " + integer);
+                        }
+    
+                        @Override
+                        public void onCompleted() {
+    
+                        }
+    
+                        @Override
+                        public void onError(Throwable e) {
+    
+                        }
+                    };
+                }
+            }).subscribe(new Action1<String>() {
+                @Override
+                public void call(String s) {
+                    Log.d(s);
+                }
+            });
+    ```
+    
+    这个例子功能和上面 map 的例子相同,都是将数字变为字符串.
+    
+    ![lift](http://plantuml.com/plantuml/png/ZPAz3e8m4CTtdg9ZIGHt1nVZPYHHNw2jfo4MIev3VNoBKgLG32FNt_-ZFKH3fcmA2HW9HGPP0L41B5apKm6ATh9Y9JnOrdtoD4tZ3gbDWmeoMGFUXTHWKPrVY3jf78s8rhWyDh9Mc4lOMThv-rFUenR__Tf8huD240HyaEDAZ_3QKPm4Ne6-AfitWAryo5W36sIdn4Fu-B9AQ1r86eB-1gP4ZaY2KMsT7nwAy0dlBW6wU_tVWMlcstpNr0Cdr6V37WPlOK6Wt1wUn4-VX-uTJUtbZH_YsVORKrGQ2CuyNffoYsZ_TvYTDg5-0G00)
+    
+    整体流程和 map 类似,都是生成一个中间 Subscriber ,去订阅原来的 Observable,
+    然后在 onNext 等方法里将数据处理转换之后,回调真正的 Subscriber.
+    
+    
 ### 线程控制
       - subscribeOn()
         `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.

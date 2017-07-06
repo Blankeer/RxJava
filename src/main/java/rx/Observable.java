@@ -263,7 +263,7 @@ public class Observable<T> {
      */
     //NOTE-Blanke: Operator是将 Subscriber<R> 变为 Subscriber<T>
     /*
-        开发时候调用的是 subscribe(R) ,Operator 将这个变为 Subscriber<T>,供上层调用
+        观察者调用的是 .subscribe(R) ,Operator 将这个变为 Subscriber<T>,供上层调用
     */
     public final <R> Observable<R> lift(final Operator<? extends R, ? super T> operator) {
         return create(new OnSubscribeLift<T, R>(onSubscribe, operator));

@@ -1,0 +1,22 @@
+
+@startuml
+autonumber
+actor me
+me -> operator : new Operator(...)
+me -> sourceObservable : lift(operator)
+sourceObservable -> onSubscribeLift : new OnSubscribeLift(onSubscribe,operator)
+sourceObservable -> liftObservable : create(onSubscribeLift)
+me -> liftObservable : subscribe(targetSubscriber)
+liftObservable -> targetSubscriber : onStart()
+liftObservable -> onSubscribeLift : call(targetSubscriber)
+onSubscribeLift -> operator : call(targetSubscriber)
+operator --> onSubscribeLift : liftSubscriber
+onSubscribeLift -> liftSubscriber : onStart()
+onSubscribeLift -> sourceOnSubscribe : call(liftSubscriber)
+sourceOnSubscribe -> sourceOnSubscribe : do work
+sourceOnSubscribe -> liftSubscriber : onNext(T)
+liftSubscriber -> targetSubscriber : onNext(R)
+sourceOnSubscribe -> liftSubscriber : onCompleted()/onError(e)
+liftSubscriber -> targetSubscriber : onCompleted()/onError(e)
+
+@enduml
