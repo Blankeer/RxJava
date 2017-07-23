@@ -147,6 +147,6 @@ Observable.just(1,2,3,4,5)
     
 ### 线程控制
       - subscribeOn()
-        `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.
+        `OperatorSubscribeOn` 新建了一个 OnSubscribe,执行 call() 即产生事件.即 OperatorSubscribeOn,内部调用了线程相关.
       - observeOn()
-        使用了 lift 操作符, operator 是 `OperatorObserveOn`.
+        使用了 lift 操作符, operator 是 `OperatorObserveOn`.内部也是线程相关代码.
